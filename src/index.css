@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+@theme {
+  /* Color Palette - Deel-inspired: Clean, professional, enterprise */
+  --color-snow: #FFFFFF;
+  --color-frost: #F5F7FA;
+  --color-azure: #1B4FBB;
+  --color-midnight: #0F172A;
+
+  /* Extended palette */
+  --color-snow-50: #FAFBFC;
+  --color-snow-100: #FFFFFF;
+  --color-frost-50: #F8FAFC;
+  --color-frost-100: #F1F5F9;
+  --color-frost-200: #E2E8F0;
+  --color-azure-50: #EFF6FF;
+  --color-azure-100: #DBEAFE;
+  --color-azure-200: #93C5FD;
+  --color-azure-300: #3B82F6;
+  --color-azure-400: #1B4FBB;
+  --color-azure-500: #1D4ED8;
+  --color-azure-600: #1E40AF;
+  --color-midnight-50: #F8FAFC;
+  --color-midnight-100: #64748B;
+  --color-midnight-200: #334155;
+  --color-midnight-300: #1E293B;
+  --color-midnight-400: #0F172A;
+  --color-midnight-500: #020617;
+
+  /* Font families - IBM Plex (technical, readable) + Outfit (modern display) */
+  --font-sans: 'IBM Plex Sans', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Custom animations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+  --animate-slide-up: slideUp 0.6s ease-out both;
+  --animate-fade-in: fadeIn 0.8s ease-out both;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px rgba(27, 79, 187, 0.2); }
+  to { box-shadow: 0 0 40px rgba(27, 79, 187, 0.4); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-snow);
+  background-image:
+    linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 50%, #FFFFFF 100%);
+  background-attachment: fixed;
+  color: var(--color-midnight);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: var(--color-azure);
+  color: white;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-snow);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-azure-200);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-azure);
+}
+
+/* Glass morphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Gradient text - Deel-style clean blue */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-azure) 0%, #3B82F6 50%, var(--color-midnight) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Deel-style italic emphasis for headlines */
+.text-emphasis {
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* Wave di section Why Work With Me - smooth curve di bawah, transisi ke Technologies */
+.section-wave-highlights {
+  position: relative;
+  overflow: hidden;
+}
+.section-wave-highlights::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100px;
+  pointer-events: none;
+  z-index: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 120' preserveAspectRatio='none'%3E%3Cpath fill='%23FFFFFF' d='M0,0 L1440,0 L1440,50 C1080,110 720,30 360,50 C180,70 60,40 0,50 L0,0 Z'/%3E%3C/svg%3E") no-repeat center bottom;
+  background-size: 100% 100%;
+}
+
+/* Tech/CTA section - dark blue, tanpa wave */
+.section-wave-center {
+  position: relative;
+  background: #0F172A;
+}
+
+/* Blog: wave arah bawah nempel di posisi 0 (paling atas), tanpa gradasi */
+.bg-wave-blog-down {
+  background-color: #FFFFFF;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 120' preserveAspectRatio='none'%3E%3Cpath fill='%230F172A' d='M0,0 L1440,0 L1440,50 C1080,110 720,30 360,50 C180,70 60,40 0,50 L0,0 Z'/%3E%3C/svg%3E");
+  background-size: 100% 120px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+}
+
+/* Blog article - optimal readability */
+.blog-article {
+  font-family: var(--font-sans);
+}
+.blog-article h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+.blog-article p {
+  font-family: var(--font-sans);
+  font-feature-settings: "kern" 1, "liga" 1;
+}
