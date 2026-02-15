@@ -44,7 +44,7 @@ const contactInfo = [
   {
     icon: DollarSign,
     title: "Rate",
-    value: "$10/hr · Negotiable",
+    value: "$25/hr · Negotiable",
     link: null,
   },
 ];
