@@ -19,6 +19,18 @@ const filters = ["All", "Full Stack", "Frontend", "Backend", "Mobile"];
 
 const projects = [
   {
+    title: "WalletWise",
+    description:
+      "Expense tracking SaaS with wallets, transactions, subscription tiers. React 19 + Express + PostgreSQL. JWT auth, OpenAPI spec, Pro/Pro+ billing.",
+    image: null,
+    tags: ["React", "Express", "PostgreSQL", "TypeScript", "Tailwind"],
+    category: "Full Stack",
+    github: null,
+    demo: "https://walletwise.pintarware.com",
+    featured: true,
+    color: "from-azure to-midnight",
+  },
+  {
     title: "E-Commerce Platform",
     description:
       "Full-featured online store with Laravel backend, React/Vue frontend. Product management, cart, payment integration, admin dashboard. MySQL/PostgreSQL.",

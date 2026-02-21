@@ -17,6 +17,7 @@ const footerLinks = [
     links: [
       { label: "Blog", path: "/blog" },
       { label: "Contact", path: "/contact" },
+      { label: "WalletWise", href: "https://walletwise.pintarware.com", external: true },
     ],
   },
 ];
@@ -87,14 +88,26 @@ export function Footer() {
               </h4>
               <ul className="space-y-2.5">
                 {group.links.map((link) => (
-                  <li key={link.path}>
-                    <Link
-                      to={link.path}
-                      className="text-sm text-snow/50 hover:text-azure transition-colors duration-200 flex items-center gap-1 group"
-                    >
-                      {link.label}
-                      <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200" />
-                    </Link>
+                  <li key={link.path || link.href}>
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-snow/50 hover:text-azure transition-colors duration-200 flex items-center gap-1 group"
+                      >
+                        {link.label}
+                        <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200" />
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.path}
+                        className="text-sm text-snow/50 hover:text-azure transition-colors duration-200 flex items-center gap-1 group"
+                      >
+                        {link.label}
+                        <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200" />
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ExternalLink } from "lucide-react";
+import { Menu, X, ExternalLink, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/store/useStore";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,14 @@ const navLinks = [
   { path: "/", label: "Home" },
   { path: "/about", label: "About" },
   { path: "/skills", label: "Skills" },
-  { path: "/projects", label: "Projects" },
+  {
+    path: "/projects",
+    label: "Projects",
+    children: [
+      { path: "/projects", label: "All Projects" },
+      { href: "https://walletwise.pintarware.com", label: "WalletWise", external: true },
+    ],
+  },
   { path: "/blog", label: "Blog" },
   { path: "/contact", label: "Contact" },
 ];
@@ -19,6 +26,7 @@ export function Navbar() {
   const location = useLocation();
   const { isMenuOpen, toggleMenu, closeMenu } = useStore();
   const [scrolled, setScrolled] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -74,6 +82,93 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
+              const hasChildren = "children" in link && link.children?.length;
+
+              if (hasChildren) {
+                return (
+                  <div
+                    key={link.path}
+                    className="relative"
+                    onMouseEnter={() => setProjectsOpen(true)}
+                    onMouseLeave={() => setProjectsOpen(false)}
+                  >
+                    <Link
+                      to={link.path}
+                      className={cn(
+                        "relative flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300",
+                        isLightNav
+                          ? isActive
+                            ? "text-white"
+                            : "text-white/70 hover:text-white hover:bg-white/10"
+                          : isActive
+                            ? "text-azure"
+                            : "text-midnight/60 hover:text-midnight hover:bg-frost/40"
+                      )}
+                    >
+                      {link.label}
+                      <ChevronDown className={cn("w-4 h-4 transition-transform", projectsOpen && "rotate-180")} />
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeNav"
+                          className={cn(
+                            "absolute inset-0 rounded-lg",
+                            isLightNav ? "bg-white/15 border border-white/20" : "bg-azure/10 border border-azure/15"
+                          )}
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                    </Link>
+                    <AnimatePresence>
+                      {projectsOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 pt-2"
+                        >
+                          <div
+                            className={cn(
+                              "min-w-[180px] rounded-xl border shadow-lg overflow-hidden",
+                              isLightNav ? "bg-snow/95 border-frost" : "bg-snow border-frost"
+                            )}
+                          >
+                            {link.children.map((child) =>
+                              "href" in child ? (
+                                <a
+                                  key={child.href}
+                                  href={child.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={cn(
+                                    "flex items-center justify-between gap-2 px-4 py-3 text-sm font-medium transition-colors",
+                                    isLightNav ? "text-midnight hover:bg-frost/50" : "text-midnight/80 hover:bg-frost/80"
+                                  )}
+                                >
+                                  {child.label}
+                                  <ExternalLink className="w-3.5 h-3.5 text-azure/70" />
+                                </a>
+                              ) : (
+                                <Link
+                                  key={child.path}
+                                  to={child.path}
+                                  className={cn(
+                                    "block px-4 py-3 text-sm font-medium transition-colors",
+                                    isLightNav ? "text-midnight hover:bg-frost/50" : "text-midnight/80 hover:bg-frost/80"
+                                  )}
+                                >
+                                  {child.label}
+                                </Link>
+                              )
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={link.path}
@@ -181,6 +276,57 @@ export function Navbar() {
                 <div className="flex flex-col gap-1">
                   {navLinks.map((link, i) => {
                     const isActive = location.pathname === link.path;
+                    const hasChildren = "children" in link && link.children?.length;
+
+                    if (hasChildren) {
+                      return (
+                        <motion.div
+                          key={link.path}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 + 0.1 }}
+                          className="flex flex-col gap-1"
+                        >
+                          <Link
+                            to={link.path}
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all duration-200",
+                              isActive
+                                ? "bg-azure/10 text-azure border border-azure/15"
+                                : "text-midnight/70 hover:bg-frost/50 hover:text-midnight"
+                            )}
+                          >
+                            {link.label}
+                          </Link>
+                          <div className="flex flex-col gap-0.5 pl-4 border-l-2 border-frost ml-2">
+                            {link.children.map((child) =>
+                              "href" in child ? (
+                                <a
+                                  key={child.href}
+                                  href={child.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={closeMenu}
+                                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-midnight/70 hover:bg-frost/50 hover:text-midnight"
+                                >
+                                  {child.label}
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              ) : (
+                                <Link
+                                  key={child.path}
+                                  to={child.path}
+                                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-midnight/70 hover:bg-frost/50 hover:text-midnight"
+                                >
+                                  {child.label}
+                                </Link>
+                              )
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
                     return (
                       <motion.div
                         key={link.path}

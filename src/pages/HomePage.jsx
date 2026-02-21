@@ -12,6 +12,7 @@ import {
   Layers,
   Zap,
   Star,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -266,6 +267,38 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Featured Project - WalletWise */}
+      <section className="bg-snow py-20 lg:py-24">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <FadeIn>
+            <div className="text-center mb-10">
+              <Badge variant="frost" className="mb-4">
+                Latest Project
+              </Badge>
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-midnight">
+                WalletWise
+              </h2>
+              <p className="text-midnight/60 mt-2 max-w-2xl mx-auto">
+                Expense tracking SaaS with wallets, transactions, and subscription tiers. React 19 + Express + PostgreSQL.
+              </p>
+            </div>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="flex justify-center">
+              <Button size="lg" asChild>
+                <a
+                  href="https://walletwise.pintarware.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View Live Demo <ExternalLink className="w-4 h-4" />
+                </a>
+              </Button>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
