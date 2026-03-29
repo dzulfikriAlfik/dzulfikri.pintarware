@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -14,11 +15,39 @@ import { Button } from "@/components/ui/button";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { FadeIn, AnimatedContainer, AnimatedItem } from "@/components/shared/AnimatedContainer";
-import { blogPosts } from "@/pages/BlogDetailPage";
-
-const categories = ["All", "React", "TypeScript", "Productivity", "Backend", "Career", "DevOps"];
+import { listBlogPosts } from "@/lib/cmsClient";
 
 export default function BlogPage() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        const rows = await listBlogPosts();
+        if (cancelled) return;
+        setPosts(rows);
+      } catch {
+        if (cancelled) return;
+        setPosts([]);
+      } finally {
+        if (cancelled) return;
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const featured = posts[0] ?? null;
+  const rest = posts.slice(1);
+
   return (
     <PageTransition>
       <section className="relative pt-28 pb-20 lg:pb-24 overflow-hidden min-h-screen">
@@ -37,7 +66,11 @@ export default function BlogPage() {
           <FadeIn>
             <Card className="mb-12 bg-white/60 border-frost/40 hover:border-azure/15 overflow-hidden">
               <div className="grid md:grid-cols-2">
-                <div className={`relative h-64 md:h-auto bg-linear-to-br ${blogPosts[0].color} flex items-center justify-center`}>
+                <div
+                  className={`relative h-64 md:h-auto bg-linear-to-br ${
+                    featured?.color ?? "from-azure to-azure-300"
+                  } flex items-center justify-center`}
+                >
                   <div
                     className="absolute inset-0 opacity-10"
                     style={{
@@ -54,27 +87,29 @@ export default function BlogPage() {
                   </div>
                 </div>
                 <CardContent className="p-8 md:p-10 flex flex-col justify-center">
-                  <Badge variant="default" className="w-fit mb-3">
-                    {blogPosts[0].category}
-                  </Badge>
+                  {featured && (
+                    <Badge variant="default" className="w-fit mb-3">
+                      {featured.category}
+                    </Badge>
+                  )}
                   <h3 className="font-display text-2xl md:text-3xl font-bold text-midnight mb-3 leading-tight">
-                    {blogPosts[0].title}
+                    {featured?.title ?? (loading ? "Loading..." : "No blog posts")}
                   </h3>
                   <p className="text-midnight/50 text-sm leading-relaxed mb-4">
-                    {blogPosts[0].excerpt}
+                    {featured?.excerpt ?? ""}
                   </p>
                   <div className="flex items-center gap-4 text-xs text-midnight/40 mb-6">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" />
-                      {blogPosts[0].date}
+                      {featured?.date ?? ""}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
-                      {blogPosts[0].readTime}
+                      {featured?.readTime ?? ""}
                     </span>
                   </div>
                   <Button variant="outline" size="sm" className="w-fit" asChild>
-                    <Link to={`/blog/${blogPosts[0].slug}`}>
+                    <Link to={featured?.slug ? `/blog/${featured.slug}` : "/blog"}>
                       Read Article <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Button>
@@ -85,12 +120,16 @@ export default function BlogPage() {
 
           {/* Blog Posts Grid */}
           <AnimatedContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogPosts.slice(1).map((post, i) => (
+            {rest.map((post) => (
               <AnimatedItem key={post.id}>
                 <Link to={`/blog/${post.slug}`} className="block h-full">
                 <Card className="group h-full bg-white/60 border-frost/40 hover:border-azure/15 overflow-hidden flex flex-col cursor-pointer">
                   {/* Post visual header */}
-                  <div className={`relative h-36 bg-linear-to-br ${post.color} overflow-hidden`}>
+                  <div
+                    className={`relative h-36 bg-linear-to-br ${
+                      post.color ?? "from-azure to-azure-300"
+                    } overflow-hidden`}
+                  >
                     <div
                       className="absolute inset-0 opacity-10"
                       style={{

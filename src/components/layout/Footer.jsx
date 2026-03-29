@@ -1,6 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Github, Linkedin, Mail, Heart, ArrowUpRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { getContactInfo } from "@/lib/cmsClient";
+import { getSocialIconForCmsLink } from "@/lib/cmsSocialIcons";
 
 const footerLinks = [
   {
@@ -29,6 +32,44 @@ const socialLinks = [
 ];
 
 export function Footer() {
+  const [cmsContact, setCmsContact] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getContactInfo()
+      .then((data) => {
+        if (!cancelled) setCmsContact(data);
+      })
+      .catch(() => {
+        if (!cancelled) setCmsContact(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const footerSocialRows = useMemo(() => {
+    const fromCms = (cmsContact?.social_links ?? []).filter((s) =>
+      String(s?.href ?? "").trim(),
+    );
+    if (fromCms.length > 0) {
+      return fromCms.map((s) => ({
+        key: s.href,
+        href: s.href,
+        label: s.label || "Social",
+        Icon: getSocialIconForCmsLink(s),
+      }));
+    }
+    return socialLinks.map((s) => ({
+      key: s.label,
+      href: s.href,
+      label: s.label,
+      Icon: s.icon,
+    }));
+  }, [cmsContact]);
+
   return (
     <footer className="relative overflow-hidden">
       {/* Gradient background layers */}
@@ -64,17 +105,31 @@ export function Footer() {
               Fullstack programmer & remote developer. PHP, Laravel, React, Vue, Node.js.
               Programming blog • Hire for web development projects.
             </p>
-            <div className="flex items-center gap-3">
-              {socialLinks.map((social) => (
+            {cmsContact?.email?.trim() ? (
+              <p className="text-snow/40 text-xs mb-4">
                 <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-snow/5 border border-snow/10 flex items-center justify-center text-snow/50 hover:text-azure hover:bg-azure/10 hover:border-azure/30 transition-all duration-300"
-                  aria-label={social.label}
+                  href={`mailto:${cmsContact.email}`}
+                  className="hover:text-azure transition-colors"
                 >
-                  <social.icon className="w-4 h-4" />
+                  {cmsContact.email}
+                </a>
+              </p>
+            ) : null}
+            <div className="flex items-center gap-3">
+              {footerSocialRows.map(({ key, href, label, Icon }) => (
+                <a
+                  key={key}
+                  href={href}
+                  target={href.startsWith("mailto:") ? undefined : "_blank"}
+                  rel={
+                    href.startsWith("mailto:")
+                      ? undefined
+                      : "noopener noreferrer"
+                  }
+                  className="w-10 h-10 rounded-xl bg-snow/5 border border-snow/10 flex items-center justify-center text-snow/50 hover:text-azure hover:bg-azure/10 hover:border-azure/30 transition-all duration-300"
+                  aria-label={label}
+                >
+                  <Icon className="w-4 h-4" />
                 </a>
               ))}
             </div>

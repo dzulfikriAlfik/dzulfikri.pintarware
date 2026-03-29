@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Send,
@@ -21,6 +21,8 @@ import { SectionHeading } from "@/components/shared/SectionHeading";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { FadeIn } from "@/components/shared/AnimatedContainer";
 import { useStore } from "@/store/useStore";
+import { getContactInfo } from "@/lib/cmsClient";
+import { getSocialIconForCmsLink } from "@/lib/cmsSocialIcons";
 
 const contactInfo = [
   {
@@ -66,6 +68,69 @@ export default function ContactPage() {
   const { contactForm, setContactForm, resetContactForm } = useStore();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cmsContact, setCmsContact] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await getContactInfo();
+        if (cancelled) return;
+        setCmsContact(data);
+      } catch {
+        if (cancelled) return;
+        setCmsContact(null);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const resolvedContactInfo = cmsContact
+    ? [
+        {
+          icon: Mail,
+          title: "Email",
+          value: cmsContact.email ?? "",
+          link: cmsContact.email ? `mailto:${cmsContact.email}` : null,
+        },
+        {
+          icon: MapPin,
+          title: "Location",
+          value: cmsContact.location ?? "",
+          link: null,
+        },
+        {
+          icon: Clock,
+          title: "Availability",
+          value: cmsContact.availability ?? "",
+          link: null,
+        },
+        {
+          icon: DollarSign,
+          title: "Rate",
+          value: cmsContact.rate ?? "",
+          link: null,
+        },
+      ]
+    : contactInfo;
+
+  const resolvedSocialLinks = cmsContact
+    ? (cmsContact.social_links ?? []).map((s) => ({
+        icon: getSocialIconForCmsLink(s),
+        label: s?.label ?? "Social",
+        href: s?.href ?? "#",
+        username: s?.username ?? "",
+      }))
+    : socialLinks;
+
+  const resolvedReasons = cmsContact?.collaboration_reasons?.length
+    ? cmsContact.collaboration_reasons
+    : reasons;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -102,7 +167,7 @@ export default function ContactPage() {
               <FadeIn>
                 <Card className="bg-white/60 border-frost/40">
                   <CardContent className="p-6 space-y-5">
-                    {contactInfo.map((item, i) => (
+                    {resolvedContactInfo.map((item, i) => (
                       <div key={item.title} className="flex items-start gap-4">
                         <div className="w-10 h-10 rounded-xl bg-azure/10 border border-azure/10 flex items-center justify-center shrink-0">
                           <item.icon className="w-4 h-4 text-azure" />
@@ -136,7 +201,7 @@ export default function ContactPage() {
                       Connect on Social
                     </h4>
                     <div className="space-y-3">
-                      {socialLinks.map((social) => (
+                      {resolvedSocialLinks.map((social) => (
                         <a
                           key={social.label}
                           href={social.href}
@@ -171,7 +236,7 @@ export default function ContactPage() {
                       </h4>
                     </div>
                     <ul className="space-y-2.5">
-                      {reasons.map((reason) => (
+                      {resolvedReasons.map((reason) => (
                         <li key={reason} className="flex items-center gap-2.5 text-sm text-snow/70">
                           <CheckCircle2 className="w-4 h-4 text-azure-200 shrink-0" />
                           {reason}

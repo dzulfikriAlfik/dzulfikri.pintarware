@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -19,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { FadeIn } from "@/components/shared/AnimatedContainer";
+import { listProjects, listBlogPosts, getContactInfo } from "@/lib/cmsClient";
+import { getSocialIconForCmsLink } from "@/lib/cmsSocialIcons";
 
 const stats = [
   { value: "3+", label: "Years Experience" },
@@ -52,6 +55,73 @@ const techStack = [
 ];
 
 export default function HomePage() {
+  const [cmsFeaturedProject, setCmsFeaturedProject] = useState(null);
+  const [cmsBlogPreview, setCmsBlogPreview] = useState([]);
+  const [cmsContact, setCmsContact] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [projRes, posts, contact] = await Promise.all([
+          listProjects(),
+          listBlogPosts(),
+          getContactInfo(),
+        ]);
+        if (cancelled) return;
+        const list = projRes.projects ?? [];
+        const featured =
+          list.find((p) => p.featured) ?? list[0] ?? null;
+        setCmsFeaturedProject(featured);
+        setCmsBlogPreview(Array.isArray(posts) ? posts.slice(0, 3) : []);
+        setCmsContact(contact);
+      } catch {
+        if (cancelled) return;
+        setCmsFeaturedProject(null);
+        setCmsBlogPreview([]);
+        setCmsContact(null);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const heroLocation =
+    cmsContact?.location?.trim?.() || "Indonesia · Remote Worldwide";
+
+  const cmsHeroSocials = (cmsContact?.social_links ?? []).filter((s) =>
+    String(s?.href ?? "").trim(),
+  );
+
+  const heroSocialRows =
+    cmsHeroSocials.length > 0
+      ? cmsHeroSocials.map((s) => ({
+          key: s.href,
+          href: s.href,
+          Icon: getSocialIconForCmsLink(s),
+        }))
+      : [
+          {
+            key: "github",
+            href: "https://github.com/dzulfikriAlfik",
+            Icon: Github,
+          },
+          {
+            key: "linkedin",
+            href: "https://www.linkedin.com/in/dzulfikri-alkautsari-b5b892187/",
+            Icon: Linkedin,
+          },
+          {
+            key: "mail",
+            href: "mailto:dzulfikri.alkautsari@gmail.com",
+            Icon: Mail,
+          },
+        ];
+
   return (
     <PageTransition>
       {/* Hero Section - light background */}
@@ -94,7 +164,7 @@ export default function HomePage() {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }}>
                 <div className="flex items-center gap-2 text-sm text-midnight/50 mb-8">
                   <MapPin className="w-4 h-4" />
-                  <span>Indonesia · Remote Worldwide</span>
+                  <span>{heroLocation}</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
               </motion.div>
@@ -121,19 +191,15 @@ export default function HomePage() {
                     Connect
                   </span>
                   <div className="h-px flex-1 bg-frost-200 max-w-12" />
-                  {[
-                    { icon: Github, href: "https://github.com/dzulfikriAlfik" },
-                    { icon: Linkedin, href: "https://www.linkedin.com/in/dzulfikri-alkautsari-b5b892187/" },
-                    { icon: Mail, href: "mailto:dzulfikri.alkautsari@gmail.com" },
-                  ].map((social, i) => (
+                  {heroSocialRows.map(({ key, href, Icon }) => (
                     <a
-                      key={i}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      key={key}
+                      href={href}
+                      target={href.startsWith("mailto:") ? undefined : "_blank"}
+                      rel={href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
                       className="w-10 h-10 rounded-xl border border-frost-200 flex items-center justify-center text-midnight/40 hover:text-azure hover:border-azure/30 hover:bg-azure/5 transition-all duration-300"
                     >
-                      <social.icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4" />
                     </a>
                   ))}
                 </div>
@@ -270,37 +336,102 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Project - WalletWise */}
+      {/* Featured project from CMS (fallback: WalletWise) */}
       <section className="bg-snow py-20 lg:py-24">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <FadeIn>
             <div className="text-center mb-10">
               <Badge variant="frost" className="mb-4">
-                Latest Project
+                {cmsFeaturedProject ? "Featured project" : "Latest project"}
               </Badge>
               <h2 className="font-display text-3xl sm:text-4xl font-bold text-midnight">
-                WalletWise
+                {cmsFeaturedProject?.title ?? "WalletWise"}
               </h2>
               <p className="text-midnight/60 mt-2 max-w-2xl mx-auto">
-                Expense tracking SaaS with wallets, transactions, and subscription tiers. React 19 + Express + PostgreSQL.
+                {cmsFeaturedProject?.description ??
+                  "Expense tracking SaaS with wallets, transactions, and subscription tiers. React 19 + Express + PostgreSQL."}
               </p>
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <div className="flex justify-center">
-              <Button size="lg" asChild>
-                <a
-                  href="https://walletwise.pintarware.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View Live Demo <ExternalLink className="w-4 h-4" />
-                </a>
+            <div className="flex flex-wrap justify-center gap-3">
+              {cmsFeaturedProject?.demo ? (
+                <Button size="lg" asChild>
+                  <a
+                    href={cmsFeaturedProject.demo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View Live Demo <ExternalLink className="w-4 h-4" />
+                  </a>
+                </Button>
+              ) : (
+                <Button size="lg" asChild>
+                  <a
+                    href="https://walletwise.pintarware.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View Live Demo <ExternalLink className="w-4 h-4" />
+                  </a>
+                </Button>
+              )}
+              <Button size="lg" variant="outline" asChild>
+                <Link to="/projects">
+                  All projects <ArrowRight className="w-4 h-4" />
+                </Link>
               </Button>
             </div>
           </FadeIn>
         </div>
       </section>
+
+      {/* Latest blog posts from CMS */}
+      {cmsBlogPreview.length > 0 && (
+        <section className="bg-frost/30 py-20 lg:py-24 border-y border-frost/60">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            <FadeIn>
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+                <div>
+                  <Badge variant="frost" className="mb-3">
+                    Blog
+                  </Badge>
+                  <h2 className="font-display text-3xl sm:text-4xl font-bold text-midnight">
+                    Latest articles
+                  </h2>
+                  <p className="text-midnight/50 text-sm mt-2 max-w-xl">
+                    From the CMS — same posts as on the blog page.
+                  </p>
+                </div>
+                <Button variant="outline" asChild>
+                  <Link to="/blog">
+                    View all <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+              </div>
+            </FadeIn>
+            <div className="grid md:grid-cols-3 gap-6">
+              {cmsBlogPreview.map((post, i) => (
+                <FadeIn key={post.slug} delay={0.05 * i}>
+                  <Link
+                    to={`/blog/${post.slug}`}
+                    className="block h-full p-6 rounded-2xl bg-white/80 border border-frost/60 hover:border-azure/25 hover:shadow-lg transition-all duration-300"
+                  >
+                    <p className="text-xs text-midnight/40 mb-2">{post.date ?? ""}</p>
+                    <h3 className="font-display font-semibold text-lg text-midnight mb-2 line-clamp-2">
+                      {post.title}
+                    </h3>
+                    <p className="text-sm text-midnight/50 line-clamp-3">{post.excerpt}</p>
+                    <span className="inline-flex items-center gap-1 text-azure text-sm font-medium mt-4">
+                      Read <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 1 Wave section - tengah page, Deel-style. Dark blue, wave top & bottom beda, biru gelap */}
       <section className="section-wave-center py-24 lg:py-32 relative overflow-hidden">

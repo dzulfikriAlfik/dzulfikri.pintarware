@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ExternalLink,
@@ -14,6 +14,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { FadeIn, AnimatedContainer, AnimatedItem } from "@/components/shared/AnimatedContainer";
+import { listProjects } from "@/lib/cmsClient";
 
 const filters = ["All", "Full Stack", "Frontend", "Backend", "Mobile"];
 
@@ -96,7 +97,11 @@ function ProjectCard({ project, index }) {
   return (
     <Card className="group h-full bg-white/60 border-frost/40 hover:border-azure/20 overflow-hidden flex flex-col">
       {/* Project visual header */}
-      <div className={`relative h-48 bg-linear-to-br ${project.color} overflow-hidden`}>
+      <div
+        className={`relative h-48 bg-linear-to-br ${
+          project.color ?? "from-azure to-midnight"
+        } overflow-hidden`}
+      >
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -150,7 +155,7 @@ function ProjectCard({ project, index }) {
 
       <CardContent className="flex-1">
         <div className="flex flex-wrap gap-1.5">
-          {project.tags.map((tag) => (
+          {(project.tags ?? []).map((tag) => (
             <Badge key={tag} variant="frost" className="text-[11px] px-2 py-0.5">
               {tag}
             </Badge>
@@ -181,10 +186,50 @@ function ProjectCard({ project, index }) {
 export default function ProjectsPage() {
   const [activeFilter, setActiveFilter] = useState("All");
 
+  const [cmsProjects, setCmsProjects] = useState([]);
+  const [cmsCategories, setCmsCategories] = useState([]);
+  const [loadingCms, setLoadingCms] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoadingCms(true);
+      try {
+        const { projects, categories } = await listProjects();
+        if (cancelled) return;
+
+        setCmsProjects(projects);
+        setCmsCategories(categories);
+      } catch {
+        // Keep static fallback if CMS API is unreachable/misconfigured.
+        if (cancelled) return;
+        setCmsProjects([]);
+        setCmsCategories([]);
+      } finally {
+        if (cancelled) return;
+        setLoadingCms(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const resolvedProjects = cmsProjects.length > 0 ? cmsProjects : projects;
+  const resolvedFilters =
+    cmsCategories.length > 0 ? ["All", ...cmsCategories] : filters;
+
+  useEffect(() => {
+    if (!resolvedFilters.includes(activeFilter)) setActiveFilter("All");
+  }, [cmsCategories]);
+
   const filteredProjects =
     activeFilter === "All"
-      ? projects
-      : projects.filter((p) => p.category === activeFilter);
+      ? resolvedProjects
+      : resolvedProjects.filter((p) => p.category === activeFilter);
 
   return (
     <PageTransition>
@@ -203,7 +248,7 @@ export default function ProjectsPage() {
           {/* Filter Tabs */}
           <FadeIn>
             <div className="flex flex-wrap justify-center gap-2 mb-12">
-              {filters.map((filter) => (
+              {resolvedFilters.map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
@@ -242,7 +287,7 @@ export default function ProjectsPage() {
             </motion.div>
           </AnimatePresence>
 
-          {filteredProjects.length === 0 && (
+          {!loadingCms && filteredProjects.length === 0 && (
             <div className="text-center py-20 text-midnight/40">
               <p className="text-lg">No projects found for this category.</p>
             </div>

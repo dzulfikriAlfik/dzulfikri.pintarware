@@ -1,4 +1,5 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { PageTransition } from "@/components/shared/PageTransition";
 import { FadeIn } from "@/components/shared/AnimatedContainer";
+import { getBlogPost, listBlogPosts } from "@/lib/cmsClient";
 
 const blogPosts = [
   {
@@ -339,10 +341,60 @@ function getAdjacentPosts(currentId) {
 
 export default function BlogDetailPage() {
   const { slug } = useParams();
-  const navigate = useNavigate();
-  const post = getPostBySlug(slug);
 
-  if (!post) {
+  const staticPost = getPostBySlug(slug);
+
+  const [cmsPosts, setCmsPosts] = useState([]);
+  const [cmsPost, setCmsPost] = useState(null);
+  const [loadingCms, setLoadingCms] = useState(true);
+  const [cmsNotFound, setCmsNotFound] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoadingCms(true);
+      setCmsNotFound(false);
+
+      try {
+        const [postsList, detailPayload] = await Promise.all([
+          listBlogPosts(),
+          getBlogPost(slug),
+        ]);
+
+        if (cancelled) return;
+
+        setCmsPosts(Array.isArray(postsList) ? postsList : []);
+        setCmsPost(detailPayload?.data ?? null);
+      } catch (e) {
+        if (cancelled) return;
+
+        const msg = String(e?.message ?? '').toLowerCase();
+        if (msg.includes('not found')) {
+          setCmsNotFound(true);
+          setCmsPost(null);
+          setCmsPosts([]);
+        } else {
+          // Network/CMS base URL misconfig: keep fallback static content.
+          setCmsNotFound(false);
+          setCmsPost(null);
+          setCmsPosts([]);
+        }
+      } finally {
+        if (cancelled) return;
+        setLoadingCms(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  const post = cmsPost ?? (!cmsNotFound ? staticPost : null);
+
+  if (!loadingCms && !post) {
     return (
       <PageTransition>
         <section className="relative pt-28 pb-20 min-h-screen flex items-center justify-center">
@@ -364,7 +416,18 @@ export default function BlogDetailPage() {
     );
   }
 
-  const { prev, next } = getAdjacentPosts(post.id);
+  let prev = null;
+  let next = null;
+
+  if (cmsPost && cmsPosts.length > 0) {
+    const currentIndex = cmsPosts.findIndex((p) => p.slug === slug);
+    prev = currentIndex < cmsPosts.length - 1 ? cmsPosts[currentIndex + 1] : null;
+    next = currentIndex > 0 ? cmsPosts[currentIndex - 1] : null;
+  } else if (post) {
+    const adjacent = getAdjacentPosts(post.id);
+    prev = adjacent.prev;
+    next = adjacent.next;
+  }
 
   return (
     <PageTransition>
@@ -427,7 +490,7 @@ export default function BlogDetailPage() {
                 Blog
               </Link>
               <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-midnight font-medium max-w-full break-words">
+              <span className="text-midnight font-medium max-w-full wrap-break-word">
                 {post.title}
               </span>
             </nav>
@@ -436,26 +499,33 @@ export default function BlogDetailPage() {
           {/* Article body - typography jelas, line height optimal */}
           <FadeIn delay={0.1}>
             <article className="blog-article">
-              {post.content.map((block, i) => {
-                if (block.type === "heading") {
+              {cmsPost?.body ? (
+                <div
+                  className="blog-article"
+                  dangerouslySetInnerHTML={{ __html: cmsPost.body }}
+                />
+              ) : (
+                post.content.map((block, i) => {
+                  if (block.type === "heading") {
+                    return (
+                      <h2
+                        key={i}
+                        className="font-display text-xl sm:text-2xl font-bold text-midnight mt-12 mb-4 first:mt-0 scroll-mt-24"
+                      >
+                        {block.text}
+                      </h2>
+                    );
+                  }
                   return (
-                    <h2
+                    <p
                       key={i}
-                      className="font-display text-xl sm:text-2xl font-bold text-midnight mt-12 mb-4 first:mt-0 scroll-mt-24"
+                      className="text-midnight-300 text-base sm:text-lg leading-[1.8] mb-6 max-w-[65ch]"
                     >
                       {block.text}
-                    </h2>
+                    </p>
                   );
-                }
-                return (
-                  <p
-                    key={i}
-                    className="text-midnight-300 text-base sm:text-lg leading-[1.8] mb-6 max-w-[65ch]"
-                  >
-                    {block.text}
-                  </p>
-                );
-              })}
+                })
+              )}
             </article>
           </FadeIn>
 
